@@ -42,7 +42,7 @@ def test(fname,lexicon):
       words = content[l].split()
       pos = content[l+1].split()
       number = content[l+2].split()
-
+      lasttag = 0
       for w in range(0,len(words)):
         word = words[w]
         if word in lexicon:
@@ -62,13 +62,17 @@ def print_to_file(predictions):
     mode = 'a'
     with open(kaggleTest, mode) as f:
       f.write("Type,Prediction\n")
-  print predictions
   with open(kaggleTest, mode) as f:
     for k in predictions:
-      f.write(k + ",")
-      for w in predictions[k]:
-        f.write(w + " ")
-      f.write("\n")
+      f.write(k + ", ")
+      start = predictions[k][0]
+      f.write(start + "-")
+      for w in range(1,len(predictions[k])):
+        if not (int(predictions[k][w]) - int(start) == 1):
+          f.write(start + " ")
+          start = predictions[k][w]
+          f.write(start + "-")
+      f.write(start+"\n")
 
 lexicon = training('train.txt')
 test('test.txt', lexicon)
