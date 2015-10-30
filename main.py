@@ -52,6 +52,7 @@ def test(fname,lexicon):
           if maxtag != 'O':
             shorten = maxtag[2:]
             predictions[shorten].append(number[w])
+
   print_to_file(predictions)
   return predictions
 
@@ -66,13 +67,16 @@ def print_to_file(predictions):
     for k in predictions:
       f.write(k + ", ")
       start = predictions[k][0]
-      f.write(start + "-")
+      f.write(str(start) + "-")
       for w in range(1,len(predictions[k])):
         if not (int(predictions[k][w]) - int(start) == 1):
-          f.write(start + " ")
+          f.write(str(start) + " ")
           start = predictions[k][w]
-          f.write(start + "-")
-      f.write(start+"\n")
+          f.write(str(start) + "-")
+        else:
+          start = predictions[k][w]
+
+      f.write(str(start)+"\n")
 
 lexicon = training('train.txt')
 test('test.txt', lexicon)
