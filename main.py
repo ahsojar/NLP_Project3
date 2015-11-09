@@ -13,14 +13,14 @@ kaggleTest = "kaggleTest.csv"
 unigram_counts = {} 
 bigram_counts = {} #2D bigram counts {word1: {word2: count, word3: count}, word2: {word4: count}}
 bigram_prob = {}
-start_tag_counts = {'<S>': 0,'I-PER': 0,'B-PER':0, 'O':0, 'I-LOC':0,'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
+start_tag_counts = {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
 
 def training(fname):
   with open(fname) as f:
     content = f.readlines()
     num_sentences = len(content)/3.0
     word_tag_count = {}
-    tag_counts= {'<S>': 0,'I-PER': 0,'B-PER':0, 'O':0, 'I-LOC':0,'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
+    tag_counts= {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
 
     for l in range(0,len(content),3):
       words =['<S>'] + content[l].split()
@@ -32,7 +32,7 @@ def training(fname):
       for w in range(0,len(words)):
         tag_counts[tags[w]] += 1
         if words[w] not in word_tag_count:
-          word_tag_count[words[w]] = {'<S>': 0, 'I-PER': 0, 'B-PER':0,'O':0, 'I-LOC':0, 'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
+          word_tag_count[words[w]] = {'<S>': 1, 'I-PER': 1, 'B-PER':1,'O':1, 'I-LOC':1, 'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
           word_tag_count[words[w]][tags[w]]= 1
         else:
           word_tag_count[words[w]][tags[w]] += 1
@@ -43,7 +43,7 @@ def training(fname):
 
   return [transition_prob, emission_prob, start_prob]
 
-def test(fname,word_tag_count):
+def test(fname,start_probs,transition_probs, emission_probs):
   predictions = {
   'PER':[],
   'LOC':[],
@@ -53,14 +53,18 @@ def test(fname,word_tag_count):
   with open(fname) as f:
     content = f.readlines()
     for l in range(0,len(content),3):
-      pass
-      # words = content[l].split()
-      # pos = content[l+1].split()
-      # number = content[l+2].split()
-  print predictions
- # print_to_file(predictions)
+      print "working on example ", l/3.0
+      words = ['<S>'] + content[l].split()
+      number = ['<S>'] + content[l+2].split()
+      ner_tags = viterbi(words, ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC'], start_probs, transition_probs, emission_probs)[1]
+      print ner_tags
+      for w in range(0,len(ner_tags)):
+          tag = ner_tags[w]
+          if (tag != 'O' and tag != '<S>' and number[w]!='<S>'):
+            shorten = tag[2:]
+            predictions[shorten].append(number[w])
+  print_to_file(predictions)
   return predictions
-
 
 def bigram(tokens):
   for word in tokens:
@@ -75,7 +79,7 @@ def bigram(tokens):
     if prev_word in bigram_counts:
         bigram_counts[prev_word][word] += 1
     else:
-      bigram_counts[prev_word] = {'<S>': 0,'I-PER': 0,'B-PER':0, 'O':0, 'I-LOC':0,'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
+      bigram_counts[prev_word] = {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
       bigram_counts[prev_word][word] = 1
 
     prev_word = word
@@ -102,6 +106,7 @@ def normalize_emission(emission_counts, tag_counts):
 
 
 def print_to_file(predictions):
+  print predictions
   if os.path.exists(kaggleTest):
     mode = 'a'  
   else: 
@@ -128,14 +133,20 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
   V = [{y:(start_p[y] * emit_p[obs[0]][y]) for y in states}]
   path = {y:[y] for y in states}
   for y in states:
-    V[0][y] = start_p[y] * emit_p[obs[0]][y]
+    if obs[0] in emit_p:
+      V[0][y] = start_p[y] * emit_p[obs[0]][y]
+    else:
+      V[0][y] = start_p[y] * .0005
     path[y] = [y]
    # Run Viterbi for t > 0
   for t in range(1, len(obs)):
     V.append({})
     newpath = {}
     for y in states:
-      (prob, state) = max((V[t-1][y0] * trans_p[y0][y] * emit_p[obs[t]][y], y0) for y0 in states)
+      if obs[t] in emit_p:
+        (prob, state) = max((V[t-1][y0] * trans_p[y0][y] * emit_p[obs[t]][y], y0) for y0 in states)
+      else: 
+        (prob, state) = max((V[t-1][y0] * trans_p[y0][y] * .0005, y0) for y0 in states)
       V[t][y] = prob
       newpath[y] = path[state] + [y]
        # Don't need to remember the old paths
@@ -147,7 +158,6 @@ hmm = training('train.txt')
 transition_probs = hmm[0]
 emission_probs = hmm[1]
 start_probs = hmm[2]
-
-print viterbi(['Michael', 'Chang', 'is', 'playing', 'in', 'his', '10th', 'U.S.', 'Open'], ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC'], start_probs, transition_probs, emission_probs )
+test('test.txt', start_probs,transition_probs,emission_probs)
 
 
