@@ -154,6 +154,9 @@ hmm = train('train.txt')
 transition_probs = hmm[0]
 emission_probs = hmm[1]
 start_probs = hmm[2]
-test('test.txt', start_probs,transition_probs,emission_probs)
+ner_tags = viterbi([], ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC'], start_probs, transition_probs, emission_probs)[1]
+print ner_tags
+
+#test('test.txt', start_probs,transition_probs,emission_probs)
 
 
