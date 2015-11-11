@@ -13,14 +13,14 @@ kaggleTest = "kaggleTest.csv"
 unigram_counts = {} 
 bigram_counts = {} #2D bigram counts {word1: {word2: count, word3: count}, word2: {word4: count}}
 bigram_prob = {}
-start_tag_counts = {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
+start_tag_counts = {'<S>': 1,'I-PER': 0,'B-PER':0, 'O':0, 'I-LOC':0,'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
 
 def train(fname):
   with open(fname) as f:
     content = f.readlines()
     num_sentences = len(content)/3.0
-    word_tag_count = {'<UNK>':{'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}}
-    tag_counts= {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
+    word_tag_count = {'<UNK>':{'<S>': .01,'I-PER': .01,'B-PER':.01, 'O':.01, 'I-LOC':.01,'B-LOC':.01, 'I-ORG':.01, 'B-ORG':.01, 'I-MISC':.01,'B-MISC':.01}}
+    tag_counts= {'<S>': .01,'I-PER': .01,'B-PER':.01, 'O':.01, 'I-LOC':.01,'B-LOC':.01, 'I-ORG':.01, 'B-ORG':.01, 'I-MISC':.01,'B-MISC':.01}
 
     for l in range(0,len(content),3):
       words =['<S>'] + content[l].split()
@@ -61,7 +61,10 @@ def test(fname,start_probs,transition_probs, emission_probs):
           if (tag != 'O' and tag != '<S>' and number[w]!='<S>'):
             shorten = tag[2:]
             predictions[shorten].append(number[w])
+  print "predictions"
+  print predictions
   print_to_file(predictions)
+
   return predictions
 
 def bigram(tokens):
@@ -154,6 +157,7 @@ hmm = train('train.txt')
 transition_probs = hmm[0]
 emission_probs = hmm[1]
 start_probs = hmm[2]
+
 test('test.txt', start_probs,transition_probs,emission_probs)
 
 

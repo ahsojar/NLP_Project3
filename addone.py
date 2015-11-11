@@ -1,26 +1,21 @@
 import operator
 import os
 import os.path
-import nltk
-from nltk.corpus import stopwords
 import numpy as np
-from hmm import HMM
 
 #Output file name
-kaggleTest = "kaggleTest.csv"
+kaggleTest = "addoneTransition.csv"
 
-
-unigram_counts = {} 
 bigram_counts = {} #2D bigram counts {word1: {word2: count, word3: count}, word2: {word4: count}}
 bigram_prob = {}
 start_tag_counts = {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
+word_tag_count = {'<UNK>':{'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}}
+tag_counts= {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
 
 def train(fname):
   with open(fname) as f:
     content = f.readlines()
     num_sentences = len(content)/3.0
-    word_tag_count = {'<UNK>':{'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}}
-    tag_counts= {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
 
     for l in range(0,len(content),3):
       words =['<S>'] + content[l].split()
@@ -37,7 +32,7 @@ def train(fname):
         else:
           word_tag_count[words[w]][tags[w]] += 1
   
-  transition_prob = normalize_bigram(unigram_counts, bigram_counts) 
+  transition_prob = normalize_bigram(tag_counts, bigram_counts) 
   emission_prob = normalize_emission(word_tag_count, tag_counts)
   start_prob = normalize_startprob(start_tag_counts, num_sentences)
   return [transition_prob, emission_prob, start_prob]
@@ -65,18 +60,14 @@ def test(fname,start_probs,transition_probs, emission_probs):
   return predictions
 
 def bigram(tokens):
-  for word in tokens:
-    if word in unigram_counts:
-      unigram_counts[word] += 1
-    else:
-      unigram_counts[word] = 1
-  prev_word = '<S>'
-
-  for word in tokens:
+  prev_word = tokens[0]
+  print prev_word
+  print tokens[1:]
+  for word in tokens[1:]:
     if prev_word in bigram_counts:
         bigram_counts[prev_word][word] += 1
     else:
-      bigram_counts[prev_word] = {'<S>': 0,'I-PER': 0,'B-PER':0, 'O':0, 'I-LOC':0,'B-LOC':0, 'I-ORG':0, 'B-ORG':0, 'I-MISC':0,'B-MISC':0}
+      bigram_counts[prev_word] = {'<S>': 1,'I-PER': 1,'B-PER':1, 'O':1, 'I-LOC':1,'B-LOC':1, 'I-ORG':1, 'B-ORG':1, 'I-MISC':1,'B-MISC':1}
       bigram_counts[prev_word][word] = 1
 
     prev_word = word
@@ -86,12 +77,12 @@ def normalize_startprob(start_tag_counts, num_sentences):
       start_tag_counts[w] = start_tag_counts[w]*(1.0/num_sentences)
   return start_tag_counts
 
-def normalize_bigram(unigram_counts, bigram_2d):
+def normalize_bigram(tag_counts, bigram_2d):
   for first_word in bigram_counts:
     second_words = bigram_counts[first_word]
     normalized_words = {}
     for w in second_words:
-      normalized_words[w] = second_words[w]/ float(unigram_counts[first_word])
+      normalized_words[w] = second_words[w]/ float(tag_counts[first_word])
       bigram_prob[first_word] = normalized_words
   return bigram_prob
 
@@ -154,9 +145,7 @@ hmm = train('train.txt')
 transition_probs = hmm[0]
 emission_probs = hmm[1]
 start_probs = hmm[2]
-ner_tags = viterbi([], ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC'], start_probs, transition_probs, emission_probs)[1]
-print ner_tags
 
-#test('test.txt', start_probs,transition_probs,emission_probs)
+test('test.txt', start_probs,transition_probs,emission_probs)
 
 
