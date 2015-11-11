@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 
 #Output file name
-kaggleTest = "addoneTransition.csv"
+kaggleTest = "kaggleTest.csv"
 
 bigram_counts = {} #2D bigram counts {word1: {word2: count, word3: count}, word2: {word4: count}}
 bigram_prob = {}
@@ -50,7 +50,8 @@ def test(fname,start_probs,transition_probs, emission_probs):
       #print "working on example ", l/3.0
       words = ['<S>'] + content[l].split()
       number = ['<S>'] + content[l+2].split()
-      ner_tags = viterbi(words, ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC'], start_probs, transition_probs, emission_probs)[1]
+      states = ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC']
+      ner_tags = viterbi(words, states, start_probs, transition_probs, emission_probs)[1]
       for w in range(0,len(ner_tags)):
           tag = ner_tags[w]
           if (tag != 'O' and tag != '<S>' and number[w]!='<S>'):
@@ -61,8 +62,6 @@ def test(fname,start_probs,transition_probs, emission_probs):
 
 def bigram(tokens):
   prev_word = tokens[0]
-  print prev_word
-  print tokens[1:]
   for word in tokens[1:]:
     if prev_word in bigram_counts:
         bigram_counts[prev_word][word] += 1
@@ -145,7 +144,7 @@ hmm = train('train.txt')
 transition_probs = hmm[0]
 emission_probs = hmm[1]
 start_probs = hmm[2]
-
 test('test.txt', start_probs,transition_probs,emission_probs)
-
+states = ['<S>','I-PER','B-PER', 'O', 'I-LOC','B-LOC', 'I-ORG', 'B-ORG', 'I-MISC','B-MISC']
+print viterbi(['<S>', 'my', 'name','is', 'Alisha', 'Sojar'], states, start_probs,transition_probs,emission_probs)
 
